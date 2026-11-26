@@ -44,7 +44,16 @@
             <button type="button" data-line="rk4" aria-pressed="false"><i class="rk4" aria-hidden="true"></i>RK4</button>
             <button type="button" data-line="quadratic" aria-pressed="false"><i class="quadratic" aria-hidden="true"></i>Quadratic drag</button>
           </div>
-          <p id="line-explanation" class="line-explanation" aria-live="polite"></p>
+          <section class="prediction-detail" aria-labelledby="prediction-title">
+            <div class="prediction-head">
+              <h3 id="prediction-title"></h3>
+              <p id="prediction-launch"></p>
+            </div>
+            <p id="prediction-equations" class="prediction-equations"></p>
+            <p id="prediction-result" class="prediction-result"></p>
+            <p id="prediction-offset" class="prediction-offset" hidden></p>
+            <p id="line-explanation" class="line-explanation" aria-live="polite"></p>
+          </section>
         </div>
         <div id="fit-legend" class="legend fit-legend" hidden>
           <span><i class="flight" aria-hidden="true"></i>Fitted path</span>

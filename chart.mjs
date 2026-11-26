@@ -152,13 +152,13 @@ export function drawCourt(canvas, project, { shot, series, samples, selectedLine
   ctx.clip();
   const preview = aim?.series;
   const traces = preview ?? series;
-  const active = traces.find(({ key }) => key === selectedLine);
+  const active = aim ? null : traces.find(({ key }) => key === selectedLine);
   // Lay the solid reference beneath the dashed previews so coincident curves remain visible.
-  const order = active && !preview ? [...traces.filter((trace) => trace !== active), active] : traces;
+  const order = active ? [...traces.filter((trace) => trace !== active), active] : traces;
   for (const trace of order) {
     const selected = trace === active;
-    ctx.globalAlpha = selected || !active ? 1 : preview ? 0.86 : 0.47;
-    const width = selected ? 2.6 : !active ? 2.4 : preview ? 1.7 : 1.4;
+    ctx.globalAlpha = selected || !active ? 1 : 0.47;
+    const width = aim ? 1.7 : selected ? 2.6 : active ? 1.4 : 2.4;
     drawPath(trace.points, tone(trace.color), width, trace.dash);
   }
   ctx.globalAlpha = 1;

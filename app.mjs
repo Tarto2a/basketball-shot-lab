@@ -14,6 +14,12 @@ const statusLabel = byId("shot-status");
 const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
 const lineButtons = Array.from(byId("legend").querySelectorAll("button"));
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+const predictionTitles = {
+  exact: "Laplace trajectory",
+  euler: "Euler update",
+  rk4: "Runge–Kutta 4 update",
+  quadratic: "RK4 with quadratic drag",
+};
 const explanations = {
   exact: "Orange · Exact Laplace solution for linear drag. This is the ball’s path before it hits a surface.",
   euler: "Purple · Euler uses the velocity at the start of each step. At the default step size its path runs high. Reduce the time step to bring it closer to Laplace.",
@@ -249,6 +255,68 @@ function renderLineSelection() {
   if (byId("line-explanation").textContent !== explanations[selectedLine]) {
     show("line-explanation", explanations[selectedLine]);
   }
+  renderPredictionDetails();
+}
+
+function predictionEquations(shot, u0, w0) {
+  const release = number(shot.release, 2);
+  const drag = number(shot.drag, 2);
+  const g = number(gravity, 2);
+  const step = number(shot.step, 2);
+  if (selectedLine === "exact") {
+    if (shot.drag === 0) return [
+      "x(t) ≈ " + u0 + "t",
+      "y(t) ≈ " + release + " + " + w0 + "t − " + number(gravity / 2, 3) + "t²",
+    ];
+    return [
+      "A(t) = (1 − e^(−" + drag + "t))/" + drag,
+      "x(t) ≈ " + u0 + " A(t)",
+      "y(t) ≈ " + release + " + " + w0 + " A(t) − " + g + "[t − A(t)]/" + drag,
+    ];
+  }
+
+  const rows = [
+    "z = (x, y, u, w)",
+    "z₀ ≈ (0, " + release + ", " + u0 + ", " + w0 + ")",
+  ];
+  if (selectedLine === "quadratic") {
+    const speed = number(shot.speed, 1);
+    const beta = number(shot.drag / shot.speed, 5);
+    rows.push("β = " + drag + "/" + speed + " ≈ " + beta + " m⁻¹  ·  q = √(u² + w²)");
+    rows.push("F(z) = (u, w, −βqu, −" + g + " − βqw)");
+  } else {
+    rows.push(shot.drag === 0 ? "F(z) = (u, w, 0, −" + g + ")"
+      : "F(z) = (u, w, −" + drag + "u, −" + g + " − " + drag + "w)");
+  }
+  if (selectedLine === "euler") {
+    rows.push("zₙ₊₁ = zₙ + " + step + " F(zₙ)");
+  } else {
+    rows.push(
+      "h = " + step + " s",
+      "K₁ = F(zₙ),  K₂ = F(zₙ + hK₁/2)",
+      "K₃ = F(zₙ + hK₂/2),  K₄ = F(zₙ + hK₃)",
+      "zₙ₊₁ = zₙ + h(K₁ + 2K₂ + 2K₃ + K₄)/6",
+    );
+  }
+  return rows;
+}
+
+function renderPredictionDetails() {
+  if (selectedPanel === "fit") return;
+  const shot = aim?.candidate ? { ...data.shot, ...aim.candidate } : data.shot;
+  const trace = (aim?.series ?? data.series).find(({ key }) => key === selectedLine);
+  const [, , u0, w0] = exactState(shot, 0);
+  const exact = selectedLine === "exact";
+  const t = exact ? Math.min(shot.step, trace.points.at(-1).t) : trace.points[1].t;
+  const [exactX, exactY] = exactState(shot, t);
+  const { x, y } = exact ? { x: exactX, y: exactY } : trace.points[1];
+  show("prediction-title", predictionTitles[selectedLine]);
+  show("prediction-launch", "θ = " + labelAngle(shot.angle) + " · v₀ = " + number(shot.speed, 1) + " m/s");
+  show("prediction-equations", predictionEquations(shot, number(u0, 3), number(w0, 3)).join("\n"));
+  show("prediction-result", "At " + seconds(t) + ", x ≈ " + number(x, 3) + " m and y ≈ " + number(y, 3) + " m");
+  const offset = byId("prediction-offset");
+  offset.hidden = exact;
+  if (!exact) offset.textContent = "Distance from Laplace at this time · " + positionError(Math.hypot(x - exactX, y - exactY));
 }
 
 function showStatus(text, state) {
@@ -284,6 +352,9 @@ function paint() {
   const showGrip = !fitMode && frame === null;
   grip.hidden = !showGrip;
   statusLabel.hidden = fitMode;
+  const comparison = byId("comparison");
+  const aiming = String(aim !== null);
+  if (comparison.dataset.aiming !== aiming) comparison.dataset.aiming = aiming;
   if (showGrip) {
     const spot = aim?.held ?? { x: 0, y: data.shot.release };
     grip.style.transform = "translate(" + projection.px(spot.x) + "px," + projection.py(spot.y) + "px) translate(-50%,-50%)";
@@ -425,6 +496,7 @@ function updateAim(event) {
   if (candidate?.angle !== aim.candidate?.angle || candidate?.speed !== aim.candidate?.speed) {
     aim.candidate = candidate;
     aim.series = candidate ? predictShot({ ...data.shot, ...candidate }).series : null;
+    renderPredictionDetails();
   }
 }
 
@@ -436,6 +508,7 @@ function clearAim() {
 function cancelAim() {
   clearAim();
   renderViewNote();
+  renderPredictionDetails();
   playbackLabel();
   paint();
 }
