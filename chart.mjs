@@ -157,7 +157,7 @@ export function drawCourt(canvas, project, { shot, series, samples, selectedLine
   const order = active ? [...traces.filter((trace) => trace !== active), active] : traces;
   for (const trace of order) {
     const selected = trace === active;
-    ctx.globalAlpha = aim ? 0.5 : selected || !active ? 1 : 0.47;
+    ctx.globalAlpha = aim || (active && !selected) ? 0.25 : 1;
     const width = aim ? 1.7 : selected ? 2.6 : active ? 1.4 : 2.4;
     drawPath(trace.points, tone(trace.color), width, trace.dash);
   }
