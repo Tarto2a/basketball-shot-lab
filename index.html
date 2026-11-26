@@ -30,6 +30,13 @@
           <button id="ball-grip" type="button" aria-label="Basketball. Pull back and down to aim, or press Enter to shoot with the current settings" aria-describedby="court-caption"></button>
           <span id="shot-status" class="shot-status" role="status"></span>
         </div>
+        <div class="court-view">
+          <span id="view-note"></span>
+          <div role="group" aria-label="Court view">
+            <button id="fit-view" type="button">Fit shot</button>
+            <button id="reset-view" type="button" disabled>Reset view</button>
+          </div>
+        </div>
         <div id="comparison" class="comparison">
           <div id="legend" class="legend" role="group" aria-label="Highlight a trajectory">
             <button type="button" data-line="exact" aria-pressed="true"><i class="flight" aria-hidden="true"></i>Laplace</button>

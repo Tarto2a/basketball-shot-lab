@@ -31,4 +31,6 @@ The state is `(x, y, u, w)`, with position `(x, y)`, horizontal velocity `u`, an
 
 The four lines are free-flight predictions. Orange is exact Laplace, purple is Euler, teal is RK4 with linear drag, and gold is RK4 with quadratic drag. Euler advances with the velocity at the start of the step, which puts its trajectory above Laplace at the default settings.
 
+The court scale stays fixed while you adjust parameters. Use **Fit shot** to frame a longer or higher trajectory and **Reset view** to return to the practice-court scale.
+
 The played ball uses linear drag, a fixed 1/240-second physics step, and a 12 cm radius. Contact with the rim, backboard, and floor changes its velocity. A make requires the ball to enter from above and clear the rim opening. A brief loss of speed simulates passage through the net. Restitution and rolling resistance are illustrative simulation parameters.

@@ -1,6 +1,8 @@
 import { rimHeight } from "./model.mjs";
 import { backboard, ballRadius, hoop } from "./physics.mjs";
 
+export const defaultCourtView = Object.freeze({ xMin: -2.5, xMax: 11, yMax: 6 });
+
 export function courtBounds(shot, series, frames) {
   let xMin = -2;
   let xMax = shot.distance + 1.1;
@@ -168,6 +170,10 @@ export function drawCourt(canvas, project, { shot, series, samples, selectedLine
 
   if (grip && (!ball || ball.x !== 0 || aim)) dot(px(0), py(shot.release), 13, null, "#baa38d", [2, 3]);
   if (!ball) return;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(left, top, right - left, bottom - top + 6);
+  ctx.clip();
   const x = px(ball.x);
   const floorRadius = ballRadius * project.yScale;
   const radius = Math.max(3.5, Math.min(10, floorRadius, (backX - frontX) * 0.41));
@@ -185,5 +191,6 @@ export function drawCourt(canvas, project, { shot, series, samples, selectedLine
   ctx.beginPath();
   ctx.ellipse(0, 0, radius * 0.43, radius * 0.88, 0, 0, Math.PI * 2);
   ctx.stroke();
+  ctx.restore();
   ctx.restore();
 }

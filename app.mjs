@@ -2,7 +2,7 @@ import {
   defaults, exactState, fitDrag, integrate, maxError, referenceFlight, samplePositions, solveAngles,
 } from "./model.mjs";
 import { aimShot, ballAt, ballRadius, playFlight } from "./physics.mjs";
-import { courtBounds, courtProjection, drawCourt } from "./chart.mjs";
+import { courtBounds, courtProjection, defaultCourtView, drawCourt } from "./chart.mjs";
 
 const byId = (id) => document.getElementById(id);
 const show = (id, text) => { byId(id).textContent = text; };
@@ -35,6 +35,7 @@ let seed = initialSeed;
 let data;
 let visual;
 let projection;
+let viewBounds = defaultCourtView;
 let time = 0;
 let frame = null;
 let previousTimestamp = null;
@@ -157,7 +158,7 @@ function renderDerivation(shot) {
 }
 
 function renderVisual() {
-  const { shot, flight, euler, rk4, quadratic, playable } = data;
+  const { shot, flight, euler, rk4, quadratic } = data;
   const fitMode = selectedPanel === "fit";
   let samples = [];
   let series;
@@ -178,7 +179,7 @@ function renderVisual() {
     ];
   }
   visual = { shot, series, samples };
-  projection = courtProjection(canvas, courtBounds(shot, series, fitMode ? [] : playable.frames));
+  refreshView();
   show("court-title", fitMode ? "Fitted trajectory" : "Practice court");
   show("court-caption", fitMode ? "Fitted curve and simulated positions" : "Pull the ball back and down. Release to shoot.");
   byId("comparison").hidden = fitMode;
@@ -187,6 +188,24 @@ function renderVisual() {
   canvas.setAttribute("aria-label", fitMode ? "Fitted trajectory and simulated position samples" :
     "Side view of the practice court, with the hoop and four predicted trajectories. The moving ball shows the shot with collisions.");
   renderLineSelection();
+  paint();
+}
+
+function viewPoints() {
+  return selectedPanel === "fit" ? visual.samples : data.playable.frames;
+}
+
+function refreshView() {
+  projection = courtProjection(canvas, viewBounds);
+  const outside = ({ x, y }) => x < viewBounds.xMin || x > viewBounds.xMax || y > viewBounds.yMax;
+  const clipped = viewPoints().some(outside) || visual.series.some(({ points }) => points.some(outside));
+  show("view-note", clipped ? "Path extends off-screen" : "");
+  byId("reset-view").disabled = viewBounds === defaultCourtView;
+}
+
+function setCourtView(nextView) {
+  viewBounds = nextView;
+  refreshView();
   paint();
 }
 
@@ -434,6 +453,13 @@ for (const button of lineButtons) {
   });
 }
 
+byId("fit-view").addEventListener("click", () => {
+  setCourtView(courtBounds(data.shot, visual.series, viewPoints()));
+});
+byId("reset-view").addEventListener("click", () => {
+  setCourtView(defaultCourtView);
+});
+
 function updateNoise() {
   const input = byId("noise");
   const text = "±" + input.value + " cm";
@@ -480,6 +506,6 @@ updateNoise();
 renderScore();
 recalculate();
 new ResizeObserver(() => {
-  projection = courtProjection(canvas, projection);
+  projection = courtProjection(canvas, viewBounds);
   paint();
 }).observe(canvas);

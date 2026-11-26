@@ -54,6 +54,12 @@ canvas { width: 100%; height: 331px; display: block; }
 #ball-grip { position: absolute; top: 0; left: 0; width: 46px; height: 46px; border: 1px dashed #b09272; border-radius: 50%; background: transparent; cursor: grab; touch-action: none; -webkit-tap-highlight-color: transparent; }
 #ball-grip:hover { border-color: var(--flight); background: #ffb07d16; }
 #ball-grip[data-aiming="true"] { cursor: grabbing; border-color: #ffb07d; }
+.court-view { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 18px 8px; }
+.court-view span { color: var(--court-muted); font-size: .75rem; line-height: 1.2; }
+.court-view > div { display: flex; flex: none; gap: 4px; }
+.court-view button { min-height: 32px; padding: 4px 7px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--court-paper); font-size: .8125rem; }
+.court-view button:hover:enabled { border-color: #627477; background: #34444c; }
+.court-view button:disabled { color: #9daaad; cursor: default; }
 .comparison { padding: 0 18px 11px; }
 .legend { display: flex; flex-wrap: wrap; gap: 5px; color: var(--court-muted); font-size: .8125rem; }
 .legend button, .legend span { display: inline-flex; align-items: center; gap: 6px; }
@@ -137,7 +143,7 @@ summary { padding-block: 4px; width: fit-content; color: var(--rust); font-size:
   .wrap { width: calc(100% - 26px); }
   .intro { padding-block: 21px 18px; }
   h1 { font-size: 2.125rem; }
-  .court-head, .comparison, .fit-legend, .playback { padding-inline: 10px; }
+  .court-head, .court-view, .comparison, .fit-legend, .playback { padding-inline: 10px; }
   .legend button { min-height: 43px; }
   .shot-status { right: 21px; }
   .shot-stats > div { padding-inline: 7px; }
