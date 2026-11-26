@@ -2,6 +2,8 @@
 
 A browser-based basketball game and lab for Differential Equations & Numerical Analysis. Pull the ball back and down, then release to shoot. The ball can hit the rim or backboard, fall through the hoop, and bounce and roll on the floor.
 
+[Play Basketball Shot Lab](https://basketball-shot-lab.vercel.app/)
+
 ## Run locally
 
 With Node.js 22.12 or newer, run these commands from the repository.
