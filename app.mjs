@@ -1,5 +1,5 @@
 import {
-  defaults, exactState, fitDrag, integrate, maxError, referenceFlight, samplePositions, solveAngles,
+  defaults, exactState, fitDrag, gravity, integrate, maxError, referenceFlight, rimHeight, samplePositions, solveAngles,
 } from "./model.mjs";
 import { aimShot, ballAt, ballRadius, playFlight } from "./physics.mjs";
 import { courtBounds, courtProjection, defaultCourtView, drawCourt } from "./chart.mjs";
@@ -147,11 +147,29 @@ function renderAngles(angles) {
   byId("history-wrap").hidden = !traces.length;
 }
 
-function renderDerivation(shot) {
+function renderEquations(shot) {
+  const [, , u0, w0] = exactState(shot, 0);
+  const speed = number(shot.speed, 1);
+  const angle = labelAngle(shot.angle);
+  const drag = number(shot.drag, 2);
+  const g = number(gravity, 2);
+  show("live-y0", "y(0) = " + number(shot.release, 2) + " m");
+  show("live-u0", "u(0) = " + speed + " cos(" + angle + ") ≈ " + number(u0, 3) + " m/s");
+  show("live-w0", "w(0) = " + speed + " sin(" + angle + ") ≈ " + number(w0, 3) + " m/s");
+  show("live-u-prime", shot.drag === 0 ? "u′ = 0" : "u′ = −" + drag + "u");
+  show("live-w-prime", "w′ = −" + g + (shot.drag === 0 ? "" : " − " + drag + "w"));
+  show("live-target", "y(x = " + number(shot.distance, 1) + " m) = " + number(rimHeight, 2) + " m");
+  show("live-step", "xₙ₊₁ = xₙ + " + number(shot.step, 2) + "uₙ");
+
   if (shot.drag === 0) {
+    show("live-laplace-u", "U(s) ≈ " + number(u0, 3) + "/s");
+    show("live-laplace-w", "W(s) ≈ " + number(w0, 3) + "/s − " + g + "/s²");
     show("inverse-note", "With k = 0, invert u₀/s and w₀/s − g/s² to get constant horizontal velocity and uniform vertical acceleration.");
     show("inverse-formula", "x(t) = u₀t,  y(t) = y₀ + w₀t − gt²/2");
   } else {
+    const denominator = "(s + " + drag + ")";
+    show("live-laplace-u", "U(s) ≈ " + number(u0, 3) + "/" + denominator);
+    show("live-laplace-w", "W(s) ≈ " + number(w0, 3) + "/" + denominator + " − " + g + "/[s" + denominator + "]");
     show("inverse-note", "Invert each velocity and integrate from release. Set A(t) = (1 − e⁻ᵏᵗ)/k.");
     show("inverse-formula", "x(t) = u₀A(t),  y(t) = y₀ + w₀A(t) − g[t − A(t)]/k");
   }
@@ -346,7 +364,7 @@ function recalculate() {
   show("euler-error", positionError(maxError(shot, euler)));
   show("rk4-error", positionError(maxError(shot, rk4)));
   renderAngles(solveAngles(shot));
-  renderDerivation(shot);
+  renderEquations(shot);
   renderVisual();
 }
 

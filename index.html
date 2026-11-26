@@ -70,6 +70,30 @@
         <div class="setting"><div><label for="release">Release height</label><output id="release-value" for="release" aria-live="off"></output></div><input id="release" type="range" min="1.4" max="2.6" step="0.05" value="2"></div>
         <div class="setting"><div><label for="drag">Linear drag</label><output id="drag-value" for="drag" aria-live="off"></output></div><input id="drag" type="range" min="0" max="0.6" step="0.01" value="0.16"></div>
         <div class="setting"><div><label for="step">Time step</label><output id="step-value" for="step" aria-live="off"></output></div><input id="step" type="range" min="0.02" max="0.4" step="0.01" value="0.08"></div>
+        <section class="live-equations" aria-labelledby="live-equations-title">
+          <h3 id="live-equations-title">Live equations</h3>
+          <dl>
+            <div>
+              <dt>Launch conditions</dt>
+              <dd id="live-y0"></dd>
+              <dd id="live-u0"></dd>
+              <dd id="live-w0"></dd>
+            </div>
+            <div>
+              <dt>Acceleration with linear drag</dt>
+              <dd id="live-u-prime"></dd>
+              <dd id="live-w-prime"></dd>
+            </div>
+            <div>
+              <dt>Rim target</dt>
+              <dd id="live-target"></dd>
+            </div>
+            <div>
+              <dt>Euler step · horizontal position</dt>
+              <dd id="live-step"></dd>
+            </div>
+          </dl>
+        </section>
         <button id="reset-score" type="button" class="quiet reset-score">Clear score</button>
         <p class="setup-note">Rim height 3.05 m · Ball radius 12 cm</p>
       </aside>
@@ -128,6 +152,8 @@
           <p class="equation">u′ = −ku &nbsp;&nbsp; w′ = −g − kw</p>
           <p>Applying the derivative rule with initial velocities <span class="math">u₀, w₀</span> gives</p>
           <p class="equation">U(s) = u₀/(s + k)<br>W(s) = w₀/(s + k) − g/[s(s + k)]</p>
+          <p>With the current shot settings</p>
+          <p class="equation"><span id="live-laplace-u"></span><br><span id="live-laplace-w"></span></p>
         </div>
         <div>
           <h3>Invert and recover the trajectory</h3>
