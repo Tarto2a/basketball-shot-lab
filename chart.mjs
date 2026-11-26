@@ -157,7 +157,7 @@ export function drawCourt(canvas, project, { shot, series, samples, selectedLine
   const order = active ? [...traces.filter((trace) => trace !== active), active] : traces;
   for (const trace of order) {
     const selected = trace === active;
-    ctx.globalAlpha = selected || !active ? 1 : 0.47;
+    ctx.globalAlpha = aim ? 0.5 : selected || !active ? 1 : 0.47;
     const width = aim ? 1.7 : selected ? 2.6 : active ? 1.4 : 2.4;
     drawPath(trace.points, tone(trace.color), width, trace.dash);
   }
@@ -165,6 +165,18 @@ export function drawCourt(canvas, project, { shot, series, samples, selectedLine
   for (const { x, y } of samples) dot(px(x), py(y), 2.9, tone("rk4"), "#17242d");
   if (aim) {
     line(px(aim.held.x), py(aim.held.y), px(0), py(shot.release), "#f5ca9e", [3, 4], 1.5);
+    const aimPath = preview?.find(({ key }) => key === "exact");
+    let lastX = px(0);
+    let lastY = py(shot.release);
+    for (const { t, x, y } of aimPath?.points ?? []) {
+      if (t > 0.6 || y < ballRadius) break;
+      const dotX = px(x);
+      const dotY = py(y);
+      if (Math.hypot(dotX - lastX, dotY - lastY) < 12) continue;
+      dot(dotX, dotY, 2.5, "#fff3cc", "#263129");
+      lastX = dotX;
+      lastY = dotY;
+    }
   }
   ctx.restore();
 
