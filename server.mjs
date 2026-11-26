@@ -8,6 +8,7 @@ const assets = {
   "/app.mjs": ["app.mjs", "text/javascript"],
   "/model.mjs": ["model.mjs", "text/javascript"],
   "/chart.mjs": ["chart.mjs", "text/javascript"],
+  "/physics.mjs": ["physics.mjs", "text/javascript"],
 };
 const port = Number(process.env.PORT ?? 4174);
 

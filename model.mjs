@@ -1,6 +1,5 @@
 export const gravity = 9.81;
 export const rimHeight = 3.05;
-export const targetWindow = 0.12;
 export const bounds = { minAngle: 15, maxAngle: 80, maxDrag: 0.6 };
 export const defaults = Object.freeze({
   speed: 9.1, angle: 45, distance: 4.6, release: 2, drag: 0.16, step: 0.08,
@@ -60,7 +59,7 @@ function addScaled(state, velocity, dt) {
   return state.map((value, i) => value + velocity[i] * dt);
 }
 
-function rk4(state, h, rate) {
+export function rk4Step(state, h, rate) {
   const k1 = rate(state);
   const k2 = rate(addScaled(state, k1, h / 2));
   const k3 = rate(addScaled(state, k2, h / 2));
@@ -80,7 +79,7 @@ export function integrate(shot, method, until, dragLaw = "linear") {
   for (let i = 1; i <= steps; i += 1) {
     const next = i === steps ? until : i * shot.step;
     const h = next - t;
-    state = method === "euler" ? addScaled(state, rate(state), h) : rk4(state, h, rate);
+    state = method === "euler" ? addScaled(state, rate(state), h) : rk4Step(state, h, rate);
     t = next;
     points.push({ t, x: state[0], y: state[1] });
   }

@@ -12,22 +12,37 @@
   <header class="site-header">
     <div class="wrap header-inner">
       <a class="wordmark" href="#top"><span class="ball-mark" aria-hidden="true"></span> Shot Lab</a>
-      <a class="header-link" href="#workbench-title">Explore the math</a>
+      <a class="header-link" href="#workbench-title">Methods &amp; data</a>
     </div>
   </header>
   <main class="wrap" id="top">
     <div class="intro">
-      <h1>Basketball Shot Lab<span>.</span></h1>
-      <p>Adjust the shot, watch the flight, and use differential equations to find an angle that reaches the hoop.</p>
+      <h1>Basketball Shot Lab</h1>
     </div>
     <div class="lab">
       <section class="court" aria-labelledby="court-title">
         <div class="court-head">
-          <div><h2 id="court-title">Shot trajectory</h2><span id="court-caption">Side view · meters</span></div>
+          <div><h2 id="court-title">Practice court</h2><p id="court-caption">Pull the ball back and down. Release to shoot.</p></div>
+          <div class="scoreboard"><output id="score" aria-label="Shots made out of attempts">0 / 0</output><span>Made / attempts</span></div>
+        </div>
+        <div class="court-stage">
+          <canvas id="court-plot" role="img" aria-label="Side view of shot trajectory and hoop"></canvas>
+          <button id="ball-grip" type="button" aria-label="Basketball. Pull back and down to aim, or press Enter to shoot with the current settings" aria-describedby="court-caption"></button>
           <span id="shot-status" class="shot-status" role="status"></span>
         </div>
-        <canvas id="court-plot" role="img" aria-label="Side view of shot trajectory and hoop"></canvas>
-        <div id="legend" class="legend" aria-label="Plot legend"></div>
+        <div id="comparison" class="comparison">
+          <div id="legend" class="legend" role="group" aria-label="Highlight a trajectory">
+            <button type="button" data-line="exact" aria-pressed="true"><i class="flight" aria-hidden="true"></i>Laplace</button>
+            <button type="button" data-line="euler" aria-pressed="false"><i class="euler" aria-hidden="true"></i>Euler</button>
+            <button type="button" data-line="rk4" aria-pressed="false"><i class="rk4" aria-hidden="true"></i>RK4</button>
+            <button type="button" data-line="quadratic" aria-pressed="false"><i class="quadratic" aria-hidden="true"></i>Quadratic drag</button>
+          </div>
+          <p id="line-explanation" class="line-explanation" aria-live="polite"></p>
+        </div>
+        <div id="fit-legend" class="legend fit-legend" hidden>
+          <span><i class="flight" aria-hidden="true"></i>Fitted path</span>
+          <span><i class="samples" aria-hidden="true"></i>Simulated samples</span>
+        </div>
         <div class="playback">
           <button id="play" class="primary" type="button"><span class="play-icon" aria-hidden="true"></span><span id="play-text">Shoot</span></button>
           <label for="time" class="sr-only">Flight playback time</label>
@@ -35,9 +50,9 @@
           <output id="clock" aria-live="off" for="time">0.00 s</output>
         </div>
         <dl class="shot-stats">
-          <div><dt>Peak height</dt><dd id="peak"></dd></div>
-          <div><dt>Airtime</dt><dd id="airtime"></dd></div>
-          <div><dt>Height at hoop</dt><dd id="rim-result"></dd></div>
+          <div><dt>Predicted peak</dt><dd id="peak"></dd></div>
+          <div><dt>Predicted airtime</dt><dd id="airtime"></dd></div>
+          <div><dt>Predicted rim height</dt><dd id="rim-result"></dd></div>
         </dl>
       </section>
       <aside class="setup" aria-labelledby="setup-title">
@@ -48,13 +63,13 @@
         <div class="setting"><div><label for="release">Release height</label><output id="release-value" for="release" aria-live="off"></output></div><input id="release" type="range" min="1.4" max="2.6" step="0.05" value="2"></div>
         <div class="setting"><div><label for="drag">Linear drag</label><output id="drag-value" for="drag" aria-live="off"></output></div><input id="drag" type="range" min="0" max="0.6" step="0.01" value="0.16"></div>
         <div class="setting"><div><label for="step">Time step</label><output id="step-value" for="step" aria-live="off"></output></div><input id="step" type="range" min="0.02" max="0.4" step="0.01" value="0.08"></div>
-        <label class="compare-label"><input id="quadratic" type="checkbox"> Show quadratic drag</label>
-        <p class="setup-note">Hoop height is 3.05 m. The ball is modeled as a point.</p>
+        <button id="reset-score" type="button" class="quiet reset-score">Clear score</button>
+        <p class="setup-note">Rim height 3.05 m · Ball radius 12 cm</p>
       </aside>
     </div>
 
     <section class="workbench" aria-labelledby="workbench-title">
-      <h2 id="workbench-title">Explore the math</h2>
+      <h2 id="workbench-title">Methods &amp; data</h2>
       <div role="tablist" aria-label="Experiments">
         <button id="tab-angle" type="button" role="tab" aria-controls="panel-angle" aria-selected="true">Find an angle</button>
         <button id="tab-ode" type="button" role="tab" aria-controls="panel-ode" aria-selected="false" tabindex="-1">Compare solvers</button>
@@ -63,9 +78,9 @@
       </div>
       <div id="panel-angle" class="experiment" role="tabpanel" aria-labelledby="tab-angle" tabindex="0">
         <div>
-          <h3>What angle reaches the rim?</h3>
-          <p>Keep the speed fixed and solve <span class="math">y(x<sub>rim</sub>; θ) − 3.05 = 0</span>. Bisection and safeguarded Newton solve the same equation. The results include angles where the ball is moving down at the hoop.</p>
-          <p class="small">The shot preview counts a descending ball within ±12 cm of rim height as in range. Rim and backboard collisions are outside this model.</p>
+          <h3>What angle sends the ball through the hoop?</h3>
+          <p>Bisection and safeguarded Newton find angles where the predicted center of the ball reaches rim height on its way down, using <span class="math">y(x<sub>rim</sub>; θ) − 3.05 = 0</span>.</p>
+          <p class="small">Try both angles in the game. A flatter shot can hit the rim because the whole ball has to fit through the opening.</p>
         </div>
         <div class="experiment-output">
           <p class="result-title" id="angle-summary" role="status"></p>
@@ -77,7 +92,7 @@
         <div>
           <h3>How much does the time step matter?</h3>
           <p>Euler uses the slope at the start of each step. Runge–Kutta 4 combines four slope estimates. Reduce the time step to see how the predicted paths move toward the exact linear-drag curve.</p>
-          <p class="small">The optional quadratic-drag curve uses RK4 and matches the linear drag acceleration at release.</p>
+          <p class="small">The quadratic-drag curve uses RK4 with a drag force proportional to speed squared. Both drag laws start with the same acceleration from drag.</p>
         </div>
         <div class="experiment-output">
           <p class="result-title">Maximum position error during reference flight</p>
