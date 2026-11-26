@@ -3,6 +3,7 @@ import {
 } from "./model.mjs";
 import { aimShot, ballAt, ballRadius, playFlight } from "./physics.mjs";
 import { courtBounds, courtProjection, defaultCourtView, drawCourt } from "./chart.mjs";
+import { renderMath } from "./components/ui/math-view.tsx";
 
 const byId = (id) => document.getElementById(id);
 const show = (id, text) => { byId(id).textContent = text; };
@@ -172,28 +173,47 @@ function renderAngles(angles) {
 function renderEquations(shot) {
   const [, , u0, w0] = exactState(shot, 0);
   const speed = number(shot.speed, 1);
-  const angle = labelAngle(shot.angle);
+  const angle = number(shot.angle, 2) + "^{\\circ}";
   const drag = number(shot.drag, 2);
   const g = number(gravity, 2);
-  show("live-y0", "y(0) = " + number(shot.release, 2) + " m");
-  show("live-u0", "u(0) = " + speed + " cos(" + angle + ") ≈ " + number(u0, 3) + " m/s");
-  show("live-w0", "w(0) = " + speed + " sin(" + angle + ") ≈ " + number(w0, 3) + " m/s");
-  show("live-u-prime", shot.drag === 0 ? "u′ = 0" : "u′ = −" + drag + "u");
-  show("live-w-prime", "w′ = −" + g + (shot.drag === 0 ? "" : " − " + drag + "w"));
-  show("live-target", "y(x = " + number(shot.distance, 1) + " m) = " + number(rimHeight, 2) + " m");
-  show("live-step", "xₙ₊₁ = xₙ + " + number(shot.step, 2) + "uₙ");
+  renderMath("live-y0", "y(0) = " + number(shot.release, 2) + "\\,\\mathrm{m}", true);
+  renderMath("live-u0", "u(0) = " + speed + "\\cos(" + angle + ") \\approx " + number(u0, 3) + "\\,\\mathrm{m/s}", true);
+  renderMath("live-w0", "w(0) = " + speed + "\\sin(" + angle + ") \\approx " + number(w0, 3) + "\\,\\mathrm{m/s}", true);
+  renderMath("live-u-prime", shot.drag === 0 ? "u' = 0" : "u' = -" + drag + "u", true);
+  renderMath("live-w-prime", "w' = -" + g + (shot.drag === 0 ? "" : " - " + drag + "w"), true);
+  renderMath("live-target", "y(x = " + number(shot.distance, 1) + "\\,\\mathrm{m}) = " + number(rimHeight, 2) + "\\,\\mathrm{m}", true);
+  renderMath("live-step", "x_{n+1} = x_n + " + number(shot.step, 2) + "u_n", true);
+}
 
+function renderLaplace(shot) {
+  const [, , u0, w0] = exactState(shot, 0);
+  const u = number(u0, 3);
+  const w = number(w0, 3);
+  const g = number(gravity, 2);
+  renderMath("laplace-model", ["u' = -ku", "w' = -g - kw"]);
+  renderMath("laplace-symbolic", [
+    "U(s) = \\frac{u_0}{s + k}",
+    "W(s) = \\frac{w_0}{s + k} - \\frac{g}{s(s+k)}",
+  ]);
   if (shot.drag === 0) {
-    show("live-laplace-u", "U(s) ≈ " + number(u0, 3) + "/s");
-    show("live-laplace-w", "W(s) ≈ " + number(w0, 3) + "/s − " + g + "/s²");
-    show("inverse-note", "With k = 0, invert u₀/s and w₀/s − g/s² to get constant horizontal velocity and uniform vertical acceleration.");
-    show("inverse-formula", "x(t) = u₀t,  y(t) = y₀ + w₀t − gt²/2");
+    renderMath("live-laplace", [
+      "U(s) \\approx \\frac{" + u + "}{s}",
+      "W(s) \\approx \\frac{" + w + "}{s} - \\frac{" + g + "}{s^2}",
+    ]);
+    show("inverse-note", "At zero drag, horizontal velocity is constant and vertical acceleration is set by gravity.");
+    renderMath("inverse-formula", ["x(t) = u_0t", "y(t) = y_0 + w_0t - \\frac{gt^2}{2}"]);
   } else {
-    const denominator = "(s + " + drag + ")";
-    show("live-laplace-u", "U(s) ≈ " + number(u0, 3) + "/" + denominator);
-    show("live-laplace-w", "W(s) ≈ " + number(w0, 3) + "/" + denominator + " − " + g + "/[s" + denominator + "]");
-    show("inverse-note", "Invert each velocity and integrate from release. Set A(t) = (1 − e⁻ᵏᵗ)/k.");
-    show("inverse-formula", "x(t) = u₀A(t),  y(t) = y₀ + w₀A(t) − g[t − A(t)]/k");
+    const denominator = "s + " + number(shot.drag, 2);
+    renderMath("live-laplace", [
+      "U(s) \\approx \\frac{" + u + "}{" + denominator + "}",
+      "W(s) \\approx \\frac{" + w + "}{" + denominator + "} - \\frac{" + g + "}{s(" + denominator + ")}",
+    ]);
+    show("inverse-note", "Invert each velocity and integrate from release to recover position.");
+    renderMath("inverse-formula", [
+      "A(t) = \\frac{1-e^{-kt}}{k}",
+      "x(t) = u_0 A(t)",
+      "y(t) = y_0 + w_0 A(t) - \\frac{g[t-A(t)]}{k}",
+    ]);
   }
 }
 
@@ -265,37 +285,37 @@ function predictionEquations(shot, u0, w0) {
   const step = number(shot.step, 2);
   if (selectedLine === "exact") {
     if (shot.drag === 0) return [
-      "x(t) ≈ " + u0 + "t",
-      "y(t) ≈ " + release + " + " + w0 + "t − " + number(gravity / 2, 3) + "t²",
+      "x(t) \\approx " + u0 + "t",
+      "y(t) \\approx " + release + " + " + w0 + "t - " + number(gravity / 2, 3) + "t^2",
     ];
     return [
-      "A(t) = (1 − e^(−" + drag + "t))/" + drag,
-      "x(t) ≈ " + u0 + " A(t)",
-      "y(t) ≈ " + release + " + " + w0 + " A(t) − " + g + "[t − A(t)]/" + drag,
+      "A(t) = \\frac{1 - e^{-" + drag + "t}}{" + drag + "}",
+      "x(t) \\approx " + u0 + " A(t)",
+      "y(t) \\approx " + release + " + " + w0 + " A(t) - \\frac{" + g + "[t - A(t)]}{" + drag + "}",
     ];
   }
 
   const rows = [
     "z = (x, y, u, w)",
-    "z₀ ≈ (0, " + release + ", " + u0 + ", " + w0 + ")",
+    "z_0 \\approx (0, " + release + ", " + u0 + ", " + w0 + ")",
   ];
   if (selectedLine === "quadratic") {
     const speed = number(shot.speed, 1);
     const beta = number(shot.drag / shot.speed, 5);
-    rows.push("β = " + drag + "/" + speed + " ≈ " + beta + " m⁻¹  ·  q = √(u² + w²)");
-    rows.push("F(z) = (u, w, −βqu, −" + g + " − βqw)");
+    rows.push("\\beta = \\frac{" + drag + "}{" + speed + "} \\approx " + beta + "\\,\\mathrm{m}^{-1}, \\quad q = \\sqrt{u^2 + w^2}");
+    rows.push("F(z) = (u, w, -\\beta qu, -" + g + " - \\beta qw)");
   } else {
-    rows.push(shot.drag === 0 ? "F(z) = (u, w, 0, −" + g + ")"
-      : "F(z) = (u, w, −" + drag + "u, −" + g + " − " + drag + "w)");
+    rows.push(shot.drag === 0 ? "F(z) = (u, w, 0, -" + g + ")"
+      : "F(z) = (u, w, -" + drag + "u, -" + g + " - " + drag + "w)");
   }
   if (selectedLine === "euler") {
-    rows.push("zₙ₊₁ = zₙ + " + step + " F(zₙ)");
+    rows.push("z_{n+1} = z_n + " + step + " F(z_n)");
   } else {
     rows.push(
-      "h = " + step + " s",
-      "K₁ = F(zₙ),  K₂ = F(zₙ + hK₁/2)",
-      "K₃ = F(zₙ + hK₂/2),  K₄ = F(zₙ + hK₃)",
-      "zₙ₊₁ = zₙ + h(K₁ + 2K₂ + 2K₃ + K₄)/6",
+      "h = " + step + "\\,\\mathrm{s}",
+      "K_1 = F(z_n), \\quad K_2 = F\\left(z_n + \\frac{hK_1}{2}\\right)",
+      "K_3 = F\\left(z_n + \\frac{hK_2}{2}\\right), \\quad K_4 = F(z_n + hK_3)",
+      "z_{n+1} = z_n + \\frac{h}{6}\\left(K_1 + 2K_2 + 2K_3 + K_4\\right)",
     );
   }
   return rows;
@@ -311,9 +331,9 @@ function renderPredictionDetails() {
   const [exactX, exactY] = exactState(shot, t);
   const { x, y } = exact ? { x: exactX, y: exactY } : trace.points[1];
   show("prediction-title", predictionTitles[selectedLine]);
-  show("prediction-launch", "θ = " + labelAngle(shot.angle) + " · v₀ = " + number(shot.speed, 1) + " m/s");
-  show("prediction-equations", predictionEquations(shot, number(u0, 3), number(w0, 3)).join("\n"));
-  show("prediction-result", "At " + seconds(t) + ", x ≈ " + number(x, 3) + " m and y ≈ " + number(y, 3) + " m");
+  renderMath("prediction-launch", "\\theta = " + number(shot.angle, 2) + "^{\\circ}, \\quad v_0 = " + number(shot.speed, 1) + "\\,\\mathrm{m/s}", true);
+  renderMath("prediction-equations", predictionEquations(shot, number(u0, 3), number(w0, 3)));
+  renderMath("prediction-result", "\\text{At }t = " + number(t, 2) + "\\,\\mathrm{s},\\; x \\approx " + number(x, 3) + "\\,\\mathrm{m},\\; y \\approx " + number(y, 3) + "\\,\\mathrm{m}", true);
   const offset = byId("prediction-offset");
   offset.hidden = exact;
   if (!exact) offset.textContent = "Distance from Laplace at this time · " + positionError(Math.hypot(x - exactX, y - exactY));
@@ -449,6 +469,7 @@ function recalculate() {
   show("rk4-error", positionError(maxError(shot, rk4)));
   renderAngles(solveAngles(shot));
   renderEquations(shot);
+  if (selectedPanel === "laplace") renderLaplace(shot);
   renderVisual();
 }
 
@@ -463,6 +484,7 @@ function selectTab(tab) {
     clearAim();
     pause();
   }
+  if (selectedPanel === "laplace") renderLaplace(data.shot);
   renderVisual();
 }
 
@@ -618,6 +640,7 @@ for (const [index, tab] of tabs.entries()) {
 
 updateNoise();
 renderScore();
+renderMath("angle-condition", "y(x_{\\mathrm{rim}}, \\theta) - 3.05 = 0");
 recalculate();
 new ResizeObserver(() => {
   projection = courtProjection(canvas, viewBounds);

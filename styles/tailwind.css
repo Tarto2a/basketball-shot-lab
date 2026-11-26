@@ -1,0 +1,25 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme inline {
+  --color-background: var(--paper);
+  --color-foreground: var(--ink);
+  --color-card: var(--panel);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--panel);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--rust);
+  --color-primary-foreground: var(--panel);
+  --color-secondary: var(--paper);
+  --color-secondary-foreground: var(--ink);
+  --color-muted: var(--paper);
+  --color-muted-foreground: var(--muted);
+  --color-accent: var(--edge);
+  --color-accent-foreground: var(--ink);
+  --color-destructive: var(--rust);
+  --color-border: var(--edge);
+  --color-input: var(--edge);
+  --color-ring: var(--rust);
+  --radius-md: 6px;
+}

@@ -5,6 +5,31 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
+    "dev": "node server.mjs",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 4174 --strictPort",
     "test": "node --test"
+  },
+  "dependencies": {
+    "@platejs/math": "^53.3.12",
+    "clsx": "^2.1.1",
+    "katex": "^0.19.1",
+    "platejs": "^53.5.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tailwind-merge": "^3.7.1"
+  },
+  "overrides": {
+    "katex": "$katex"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
+    "@types/node": "^22.20.7",
+    "@types/react": "^19.3.3",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "tailwindcss": "^4.3.5",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8"
   }
 }

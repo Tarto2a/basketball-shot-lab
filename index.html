@@ -6,6 +6,7 @@
   <meta name="description" content="Explore basketball trajectories, Laplace transforms, numerical integration, and curve fitting on an interactive court.">
   <title>Basketball Shot Lab</title>
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles/tailwind.css">
   <script type="module" src="./app.mjs"></script>
 </head>
 <body>
@@ -47,10 +48,10 @@
           <section class="prediction-detail" aria-labelledby="prediction-title">
             <div class="prediction-head">
               <h3 id="prediction-title"></h3>
-              <p id="prediction-launch"></p>
+              <div id="prediction-launch"></div>
             </div>
-            <p id="prediction-equations" class="prediction-equations"></p>
-            <p id="prediction-result" class="prediction-result"></p>
+            <div id="prediction-equations" class="prediction-equations"></div>
+            <div id="prediction-result" class="prediction-result"></div>
             <p id="prediction-offset" class="prediction-offset" hidden></p>
             <p id="line-explanation" class="line-explanation" aria-live="polite"></p>
           </section>
@@ -119,7 +120,8 @@
       <div id="panel-angle" class="experiment" role="tabpanel" aria-labelledby="tab-angle" tabindex="0">
         <div>
           <h3>What angle sends the ball through the hoop?</h3>
-          <p>Bisection and safeguarded Newton find angles where the predicted center of the ball reaches rim height on its way down, using <span class="math">y(x<sub>rim</sub>; θ) − 3.05 = 0</span>.</p>
+          <p>Bisection and safeguarded Newton find angles where the predicted center of the ball reaches rim height on its way down.</p>
+          <div class="equation" id="angle-condition"></div>
           <p class="small">Try both angles in the game. A flatter shot can hit the rim because the whole ball has to fit through the opening.</p>
         </div>
         <div class="experiment-output">
@@ -158,16 +160,16 @@
         <div>
           <h3>Transform the equations of motion</h3>
           <p>Let <span class="math">u = x′</span> and <span class="math">w = y′</span> be horizontal and vertical velocity. For linear drag <span class="math">k</span> and gravity <span class="math">g</span>, the model is</p>
-          <p class="equation">u′ = −ku &nbsp;&nbsp; w′ = −g − kw</p>
+          <div class="equation" id="laplace-model"></div>
           <p>Applying the derivative rule with initial velocities <span class="math">u₀, w₀</span> gives</p>
-          <p class="equation">U(s) = u₀/(s + k)<br>W(s) = w₀/(s + k) − g/[s(s + k)]</p>
+          <div class="equation" id="laplace-symbolic"></div>
           <p>With the current shot settings</p>
-          <p class="equation"><span id="live-laplace-u"></span><br><span id="live-laplace-w"></span></p>
+          <div class="equation" id="live-laplace"></div>
         </div>
         <div>
           <h3>Invert and recover the trajectory</h3>
           <p id="inverse-note"></p>
-          <p class="equation" id="inverse-formula"></p>
+          <div class="equation" id="inverse-formula"></div>
           <p>Here <span class="math">y₀</span> is the release height and horizontal displacement starts at zero.</p>
         </div>
       </div>

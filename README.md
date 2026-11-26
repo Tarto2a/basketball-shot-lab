@@ -4,13 +4,29 @@ A browser-based basketball game and lab for Differential Equations & Numerical A
 
 ## Run locally
 
-With Node.js 20 or newer, run the command from this repository.
+With Node.js 22.12 or newer, run these commands from the repository.
 
 ```sh
-node server.mjs
+npm ci
+npm run dev
 ```
 
-Open [Basketball Shot Lab](http://127.0.0.1:4174/). Keep the server running while using the app. Run `node --test` to check the numerical methods. The app uses plain HTML, CSS, and JavaScript and has no packages to install.
+Open [Basketball Shot Lab](http://127.0.0.1:4174/). Keep the server running while using the app. Use `npm test` for the numerical checks and `npm run build` for TypeScript checking and a production build in `dist/`. In PowerShell, use `npm.cmd` if your execution policy blocks `npm.ps1`.
+
+## Math components and shadcn setup
+
+- `components/ui/` is the default component path, defined by `aliases.ui` in `components.json`. The `@/` alias resolves to the repository root in both TypeScript and Vite. The folder matters because it is where shadcn places registry UI components and where the math kit resolves its shared imports.
+- `styles/tailwind.css` is the Tailwind CSS entry configured in `components.json`. The court and game layout use `styles.css`.
+- `components/ui/math-base-kit.tsx` exports the block and inline equation plugins. `components/ui/demo.tsx` is a self-contained example. The game passes LaTeX strings to `renderMath`, and Plate renders them with KaTeX.
+
+This repository already has the configuration. For a fresh React and TypeScript project, run `npx shadcn@latest init -t vite` and follow the setup prompts. For an existing React and Vite project that needs TypeScript and Tailwind, install the missing packages.
+
+```sh
+npm install -D typescript @types/node @types/react @types/react-dom tailwindcss @tailwindcss/vite
+npm install platejs @platejs/math katex
+```
+
+Register the Tailwind Vite plugin, import Tailwind in your stylesheet, and set the same `@/` alias in TypeScript and Vite. Then run `npx shadcn@latest init`. For a physical `components/ui/` folder at the repository root, point `@/` at that root and set `aliases.ui` to `@/components/ui`. [shadcn Vite setup](https://ui.shadcn.com/docs/installation/vite) · [Tailwind Vite setup](https://tailwindcss.com/docs/installation/using-vite)
 
 ## Demonstrate the project
 
