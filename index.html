@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore basketball trajectories, Laplace transforms, numerical integration, and curve fitting on an interactive court.">
+  <title>Basketball Shot Lab</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.mjs"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="wordmark" href="#top"><span class="ball-mark" aria-hidden="true"></span> Shot Lab</a>
+      <a class="header-link" href="#workbench-title">Explore the math</a>
+    </div>
+  </header>
+  <main class="wrap" id="top">
+    <div class="intro">
+      <h1>Basketball Shot Lab<span>.</span></h1>
+      <p>Adjust the shot, watch the flight, and use differential equations to find an angle that reaches the hoop.</p>
+    </div>
+    <div class="lab">
+      <section class="court" aria-labelledby="court-title">
+        <div class="court-head">
+          <div><h2 id="court-title">Shot trajectory</h2><span id="court-caption">Side view · meters</span></div>
+          <span id="shot-status" class="shot-status" role="status"></span>
+        </div>
+        <canvas id="court-plot" role="img" aria-label="Side view of shot trajectory and hoop"></canvas>
+        <div id="legend" class="legend" aria-label="Plot legend"></div>
+        <div class="playback">
+          <button id="play" class="primary" type="button"><span class="play-icon" aria-hidden="true"></span><span id="play-text">Shoot</span></button>
+          <label for="time" class="sr-only">Flight playback time</label>
+          <input type="range" id="time" min="0" max="2" step="0.001" value="0">
+          <output id="clock" aria-live="off" for="time">0.00 s</output>
+        </div>
+        <dl class="shot-stats">
+          <div><dt>Peak height</dt><dd id="peak"></dd></div>
+          <div><dt>Airtime</dt><dd id="airtime"></dd></div>
+          <div><dt>Height at hoop</dt><dd id="rim-result"></dd></div>
+        </dl>
+      </section>
+      <aside class="setup" aria-labelledby="setup-title">
+        <div class="setup-head"><h2 id="setup-title">Shot setup</h2><button type="button" class="quiet" id="reset">Reset</button></div>
+        <div class="setting"><div><label for="angle">Release angle</label><output id="angle-value" for="angle" aria-live="off"></output></div><input id="angle" type="range" min="15" max="80" step="0.01" value="45"></div>
+        <div class="setting"><div><label for="speed">Release speed</label><output id="speed-value" for="speed" aria-live="off"></output></div><input id="speed" type="range" min="5" max="15" step="0.1" value="9.1"></div>
+        <div class="setting"><div><label for="distance">Distance to hoop</label><output id="distance-value" for="distance" aria-live="off"></output></div><input id="distance" type="range" min="2" max="8" step="0.1" value="4.6"></div>
+        <div class="setting"><div><label for="release">Release height</label><output id="release-value" for="release" aria-live="off"></output></div><input id="release" type="range" min="1.4" max="2.6" step="0.05" value="2"></div>
+        <div class="setting"><div><label for="drag">Linear drag</label><output id="drag-value" for="drag" aria-live="off"></output></div><input id="drag" type="range" min="0" max="0.6" step="0.01" value="0.16"></div>
+        <div class="setting"><div><label for="step">Time step</label><output id="step-value" for="step" aria-live="off"></output></div><input id="step" type="range" min="0.02" max="0.4" step="0.01" value="0.08"></div>
+        <label class="compare-label"><input id="quadratic" type="checkbox"> Show quadratic drag</label>
+        <p class="setup-note">Hoop height is 3.05 m. The ball is modeled as a point.</p>
+      </aside>
+    </div>
+
+    <section class="workbench" aria-labelledby="workbench-title">
+      <h2 id="workbench-title">Explore the math</h2>
+      <div role="tablist" aria-label="Experiments">
+        <button id="tab-angle" type="button" role="tab" aria-controls="panel-angle" aria-selected="true">Find an angle</button>
+        <button id="tab-ode" type="button" role="tab" aria-controls="panel-ode" aria-selected="false" tabindex="-1">Compare solvers</button>
+        <button id="tab-fit" type="button" role="tab" aria-controls="panel-fit" aria-selected="false" tabindex="-1">Fit air resistance</button>
+        <button id="tab-laplace" type="button" role="tab" aria-controls="panel-laplace" aria-selected="false" tabindex="-1">Laplace derivation</button>
+      </div>
+      <div id="panel-angle" class="experiment" role="tabpanel" aria-labelledby="tab-angle" tabindex="0">
+        <div>
+          <h3>What angle reaches the rim?</h3>
+          <p>Keep the speed fixed and solve <span class="math">y(x<sub>rim</sub>; θ) − 3.05 = 0</span>. Bisection and safeguarded Newton solve the same equation. The results include angles where the ball is moving down at the hoop.</p>
+          <p class="small">The shot preview counts a descending ball within ±12 cm of rim height as in range. Rim and backboard collisions are outside this model.</p>
+        </div>
+        <div class="experiment-output">
+          <p class="result-title" id="angle-summary" role="status"></p>
+          <div id="angle-results"></div>
+          <details id="history-wrap"><summary>View iteration history</summary><div id="history"></div></details>
+        </div>
+      </div>
+      <div id="panel-ode" class="experiment" role="tabpanel" aria-labelledby="tab-ode" tabindex="0" hidden>
+        <div>
+          <h3>How much does the time step matter?</h3>
+          <p>Euler uses the slope at the start of each step. Runge–Kutta 4 combines four slope estimates. Reduce the time step to see how the predicted paths move toward the exact linear-drag curve.</p>
+          <p class="small">The optional quadratic-drag curve uses RK4 and matches the linear drag acceleration at release.</p>
+        </div>
+        <div class="experiment-output">
+          <p class="result-title">Maximum position error during reference flight</p>
+          <dl class="readings"><div><dt>Euler</dt><dd id="euler-error"></dd></div><div><dt>Runge–Kutta 4</dt><dd id="rk4-error"></dd></div></dl>
+          <p class="small">Euclidean distance from the exact position at each method’s integration times.</p>
+          <a href="#court-title" class="text-link">View the trajectories</a>
+        </div>
+      </div>
+      <div id="panel-fit" class="experiment" role="tabpanel" aria-labelledby="tab-fit" tabindex="0" hidden>
+        <div>
+          <h3>Recover drag from tracked positions</h3>
+          <p>The lab generates 19 simulated ball positions with adjustable noise. The fit uses least squares to estimate linear drag while holding the launch conditions fixed.</p>
+          <div class="setting noise-setting"><div><label for="noise">Noise per coordinate</label><output id="noise-value" for="noise" aria-live="off"></output></div><input id="noise" type="range" min="0" max="15" step="1" value="4"></div>
+          <button id="resample" class="quiet" type="button">Generate another sample</button>
+        </div>
+        <div class="experiment-output">
+          <p class="result-title">Linear drag estimate</p>
+          <dl class="readings"><div><dt>Drag used in simulation</dt><dd id="actual-drag"></dd></div><div><dt>Fitted drag</dt><dd id="fitted-drag"></dd></div><div><dt>Root mean square position residual</dt><dd id="fit-error"></dd></div></dl>
+          <a href="#court-title" class="text-link">View the samples and fitted curve</a>
+        </div>
+      </div>
+      <div id="panel-laplace" class="experiment derivation" role="tabpanel" aria-labelledby="tab-laplace" tabindex="0" hidden>
+        <div>
+          <h3>Transform the equations of motion</h3>
+          <p>Let <span class="math">u = x′</span> and <span class="math">w = y′</span> be horizontal and vertical velocity. For linear drag <span class="math">k</span> and gravity <span class="math">g</span>, the model is</p>
+          <p class="equation">u′ = −ku &nbsp;&nbsp; w′ = −g − kw</p>
+          <p>Applying the derivative rule with initial velocities <span class="math">u₀, w₀</span> gives</p>
+          <p class="equation">U(s) = u₀/(s + k)<br>W(s) = w₀/(s + k) − g/[s(s + k)]</p>
+        </div>
+        <div>
+          <h3>Invert and recover the trajectory</h3>
+          <p id="inverse-note"></p>
+          <p class="equation" id="inverse-formula"></p>
+          <p>Here <span class="math">y₀</span> is the release height and horizontal displacement starts at zero.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="wrap footer"><span>Basketball Shot Lab</span><span>Differential Equations &amp; Numerical Analysis</span></footer>
+</body>
+</html>
