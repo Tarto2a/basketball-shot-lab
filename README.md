@@ -14,7 +14,7 @@ Open [Basketball Shot Lab](http://127.0.0.1:4174/). Keep the server running whil
 
 ## Demonstrate the project
 
-1. Pull the ball back and down, then release. A longer pull increases speed. The dotted guide previews the launch. You can also set the sliders and press **Shoot** with a keyboard.
+1. Pull the ball back and down to preview all four trajectories as you aim, then release to shoot. A longer pull increases speed. You can also set the sliders and press **Shoot** with a keyboard.
 2. Reset the inputs and open **Find an angle**. At the default speed and distance, the ball’s predicted center reaches rim height while descending at approximately 32.54° and 67.66°. The lower shot clips the front rim in the game. The higher shot passes through. Open the iteration history to compare bisection and safeguarded Newton.
 3. Select one of the four lines to highlight its prediction. Open **Compare solvers** and reduce the time step to observe Euler and RK4 move toward the exact path.
 4. Open **Fit air resistance**. Adjust the noise on the 19 simulated positions and compare the fitted linear coefficient with the coefficient that generated the data.

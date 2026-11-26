@@ -76,6 +76,22 @@ function stopAtGround(points) {
   }];
 }
 
+function predictShot(shot) {
+  const flight = referenceFlight(shot);
+  const euler = integrate(shot, "euler", flight.t);
+  const rk4 = integrate(shot, "rk4", flight.t);
+  const quadratic = stopAtGround(integrate(shot, "rk4", flight.t + 1, "quadratic"));
+  return {
+    flight, euler, rk4,
+    series: [
+      { key: "exact", points: exactPoints(shot, flight.t), color: "flight", dash: [] },
+      { key: "euler", points: euler, color: "euler", dash: [6, 5] },
+      { key: "rk4", points: rk4, color: "rk4", dash: [1, 6] },
+      { key: "quadratic", points: quadratic, color: "quadratic", dash: [2, 4, 7, 4] },
+    ],
+  };
+}
+
 function positionError(meters) {
   const centimeters = meters * 100;
   if (centimeters > 1e-8 && centimeters < 0.001) return centimeters.toExponential(2) + " cm";
@@ -176,10 +192,10 @@ function renderEquations(shot) {
 }
 
 function renderVisual() {
-  const { shot, flight, euler, rk4, quadratic } = data;
+  const { shot, flight } = data;
   const fitMode = selectedPanel === "fit";
   let samples = [];
-  let series;
+  let series = data.series;
   if (fitMode) {
     samples = samplePositions(shot, flight.t, byId("noise").valueAsNumber / 100, seed);
     const fit = fitDrag(shot, samples);
@@ -188,18 +204,11 @@ function renderVisual() {
     show("actual-drag", number(shot.drag, 3) + " s⁻¹");
     show("fitted-drag", number(fit.drag, 3) + " s⁻¹");
     show("fit-error", positionError(fit.rmse));
-  } else {
-    series = [
-      { key: "exact", points: exactPoints(shot, flight.t), color: "flight", dash: [] },
-      { key: "euler", points: euler, color: "euler", dash: [6, 5] },
-      { key: "rk4", points: rk4, color: "rk4", dash: [1, 6] },
-      { key: "quadratic", points: quadratic, color: "quadratic", dash: [2, 4, 7, 4] },
-    ];
   }
   visual = { shot, series, samples };
   refreshView();
   show("court-title", fitMode ? "Fitted trajectory" : "Practice court");
-  show("court-caption", fitMode ? "Fitted curve and simulated positions" : "Pull the ball back and down. Release to shoot.");
+  show("court-caption", fitMode ? "Fitted curve and simulated positions" : "Pull back and down to preview four paths. Release to shoot.");
   byId("comparison").hidden = fitMode;
   byId("fit-legend").hidden = !fitMode;
   playButton.closest(".playback").hidden = fitMode;
@@ -213,11 +222,17 @@ function viewPoints() {
   return selectedPanel === "fit" ? visual.samples : data.playable.frames;
 }
 
+function renderViewNote() {
+  const outside = ({ x, y }) => x < viewBounds.xMin || x > viewBounds.xMax || y > viewBounds.yMax;
+  const series = aim?.series ?? visual.series;
+  const clipped = series.some(({ points }) => points.some(outside)) || (!aim?.series && viewPoints().some(outside));
+  const note = clipped ? "Path extends off-screen" : "";
+  if (byId("view-note").textContent !== note) show("view-note", note);
+}
+
 function refreshView() {
   projection = courtProjection(canvas, viewBounds);
-  const outside = ({ x, y }) => x < viewBounds.xMin || x > viewBounds.xMax || y > viewBounds.yMax;
-  const clipped = viewPoints().some(outside) || visual.series.some(({ points }) => points.some(outside));
-  show("view-note", clipped ? "Path extends off-screen" : "");
+  renderViewNote();
   byId("reset-view").disabled = viewBounds === defaultCourtView;
 }
 
@@ -347,13 +362,11 @@ function startShot(restart = false) {
 
 function recalculate() {
   const shot = readShot();
-  const flight = referenceFlight(shot);
-  const euler = integrate(shot, "euler", flight.t);
-  const rk4 = integrate(shot, "rk4", flight.t);
-  const quadratic = stopAtGround(integrate(shot, "rk4", flight.t + 1, "quadratic"));
+  const prediction = predictShot(shot);
+  const { flight, euler, rk4 } = prediction;
   const playable = playFlight(shot);
-  data = { shot, flight, euler, rk4, quadratic, playable };
-  aim = null;
+  data = { shot, ...prediction, playable };
+  clearAim();
   round = null;
   time = 0;
   timeInput.max = Math.ceil(playable.duration * 1000) / 1000;
@@ -376,7 +389,7 @@ function selectTab(tab) {
     byId(each.getAttribute("aria-controls")).hidden = each !== tab;
   }
   if (selectedPanel === "fit") {
-    aim = null;
+    clearAim();
     pause();
   }
   renderVisual();
@@ -406,23 +419,23 @@ function updateAim(event) {
   const x = Math.max(projection.xMin + 0.25, Math.min(0.75, -back * ratio / projection.xScale));
   const y = Math.max(ballRadius, Math.min(projection.yMax - 0.3, data.shot.release - down * ratio / projection.yScale));
   aim.held = { x, y, spin: x };
-  aim.candidate = direction && {
+  const candidate = direction && {
     angle: Number(direction.angle.toFixed(2)), speed: Number(direction.speed.toFixed(1)),
   };
-  aim.points = [];
-  if (aim.candidate) {
-    const shot = { ...data.shot, ...aim.candidate };
-    for (let i = 1; i <= 11; i += 1) {
-      const [aimX, aimY] = exactState(shot, i * 0.051);
-      if (aimY < ballRadius) break;
-      aim.points.push({ x: aimX, y: aimY });
-    }
+  if (candidate?.angle !== aim.candidate?.angle || candidate?.speed !== aim.candidate?.speed) {
+    aim.candidate = candidate;
+    aim.series = candidate ? predictShot({ ...data.shot, ...candidate }).series : null;
   }
-  paint();
+}
+
+function clearAim() {
+  if (aim && aim.frame !== null) cancelAnimationFrame(aim.frame);
+  aim = null;
 }
 
 function cancelAim() {
-  aim = null;
+  clearAim();
+  renderViewNote();
   playbackLabel();
   paint();
 }
@@ -433,20 +446,30 @@ grip.addEventListener("pointerdown", (event) => {
   grip.setPointerCapture(event.pointerId);
   aim = {
     pointer: event.pointerId, clientX: event.clientX, clientY: event.clientY,
-    held: { x: 0, y: data.shot.release, spin: 0 }, candidate: null, points: [],
+    held: { x: 0, y: data.shot.release, spin: 0 }, candidate: null, series: null, frame: null,
   };
   playbackLabel();
   paint();
 });
 grip.addEventListener("pointermove", (event) => {
-  if (aim?.pointer === event.pointerId) updateAim(event);
+  if (aim?.pointer !== event.pointerId) return;
+  aim.latest = event;
+  if (aim.frame !== null) return;
+  aim.frame = requestAnimationFrame(() => {
+    aim.frame = null;
+    updateAim(aim.latest);
+    renderViewNote();
+    paint();
+  });
 });
 grip.addEventListener("pointerup", (event) => {
   if (aim?.pointer !== event.pointerId) return;
   updateAim(event);
   const shot = aim.candidate;
-  cancelAim();
-  if (!shot) return;
+  if (!shot) {
+    cancelAim();
+    return;
+  }
   byId("angle").value = shot.angle;
   byId("speed").value = shot.speed;
   recalculate();

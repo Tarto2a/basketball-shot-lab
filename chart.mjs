@@ -150,21 +150,21 @@ export function drawCourt(canvas, project, { shot, series, samples, selectedLine
   ctx.beginPath();
   ctx.rect(left - 1, top - 1, right - left + 2, bottom - top + 2);
   ctx.clip();
-  const active = series.find(({ key }) => key === selectedLine);
-  for (const trace of series) {
-    if (trace === active) continue;
-    ctx.globalAlpha = active ? (aim ? 0.16 : 0.47) : 1;
-    drawPath(trace.points, tone(trace.color), active ? 1.4 : 2.4, trace.dash);
-  }
-  if (active) {
-    ctx.globalAlpha = aim ? 0.28 : 1;
-    drawPath(active.points, tone(active.color), 2.6, active.dash);
+  const preview = aim?.series;
+  const traces = preview ?? series;
+  const active = traces.find(({ key }) => key === selectedLine);
+  // Lay the solid reference beneath the dashed previews so coincident curves remain visible.
+  const order = active && !preview ? [...traces.filter((trace) => trace !== active), active] : traces;
+  for (const trace of order) {
+    const selected = trace === active;
+    ctx.globalAlpha = selected || !active ? 1 : preview ? 0.86 : 0.47;
+    const width = selected ? 2.6 : !active ? 2.4 : preview ? 1.7 : 1.4;
+    drawPath(trace.points, tone(trace.color), width, trace.dash);
   }
   ctx.globalAlpha = 1;
   for (const { x, y } of samples) dot(px(x), py(y), 2.9, tone("rk4"), "#17242d");
   if (aim) {
     line(px(aim.held.x), py(aim.held.y), px(0), py(shot.release), "#f5ca9e", [3, 4], 1.5);
-    for (const { x, y } of aim.points) dot(px(x), py(y), 2.2, "#fff1c7");
   }
   ctx.restore();
 
